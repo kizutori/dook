@@ -155,6 +155,7 @@ local function mainLoop()
 
     local function runLoop(targetMob)
         if not targetMob then
+            wait(3) -- Wait 5 seconds before looking for a new target
             local newTarget = findTargetMob(workspace:FindFirstChild("Alive"), nil) -- Search for a new mob if none exists
             if newTarget then
                 runLoop(newTarget)
