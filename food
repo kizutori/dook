@@ -1,218 +1,222 @@
-local TweenService = game:GetService("TweenService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
-local VirtualUser = game:GetService("VirtualUser")
-local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService") 
+local Players = game:GetService("Players") 
+local LocalPlayer = Players.LocalPlayer 
+local UserInputService = game:GetService("UserInputService") 
+local VirtualUser = game:GetService("VirtualUser") 
+local RunService = game:GetService("RunService") 
 
--- Customizable Variables
-local TargetMobNames = {"Drogar"}  -- List of mob names to target
-local DistanceBehind = 7  -- Distance behind the mob
-local TeleportSpeed = 200
-local PlatformOffset = 1 -- Distance of platform below player
+-- Customizable Variables 
+local TargetMobNames = {"Drogar"}  -- List of mob names to target 
+local DistanceBehind = 7  -- Distance behind the mob 
+local TeleportSpeed = 200 
+local PlatformOffset = 1 -- Distance of platform below player 
 
--- Combat Variables
-local AutoClickEnabled = true
-local MouseDown = false
+-- Combat Variables 
+local AutoClickEnabled = true 
+local MouseDown = false 
 
--- Function to find the target mob
-local function findTargetMob(AliveFolder, excludeMob)
-    if not AliveFolder then return nil end
-    for _, mob in pairs(AliveFolder:GetChildren()) do
-        if mob:IsA("Model") and not Players:GetPlayerFromCharacter(mob) and mob ~= excludeMob then
-            for _, mobName in pairs(TargetMobNames) do
-                if string.find(mob.Name:lower(), mobName:lower()) then
-                    return mob
-                end
-            end
-        end
-    end
-    return nil
-end
+-- Function to find the target mob 
+local function findTargetMob(AliveFolder, excludeMob) 
+    if not AliveFolder then return nil end 
+    for _, mob in pairs(AliveFolder:GetChildren()) do 
+        if mob:IsA("Model") and not Players:GetPlayerFromCharacter(mob) and mob ~= excludeMob then 
+            for _, mobName in pairs(TargetMobNames) do 
+                if string.find(mob.Name:lower(), mobName:lower()) then 
+                    -- Check for the "target" ObjectValue and its value
+                    local targetObjectValue = mob:FindFirstChild("target")
+                    if targetObjectValue and targetObjectValue.Value and targetObjectValue.Value.Name == "karimetuki" then
+                        return mob 
+                    end
+                end 
+            end 
+        end 
+    end 
+    return nil 
+end 
 
--- Function to get the best part to attach below
-local function getTargetPart(mob)
-    if not mob then return nil end
-    return mob:FindFirstChild("Torso") or mob:FindFirstChild("HumanoidRootPart")
-end
+-- Function to get the best part to attach below 
+local function getTargetPart(mob) 
+    if not mob then return nil end 
+    return mob:FindFirstChild("Torso") or mob:FindFirstChild("HumanoidRootPart") 
+end 
 
--- Function to create and maintain platform below character
-local function createPlatform(Character)
-    local platform = Instance.new("Part")
-    platform.Size = Vector3.new(5, 1, 5)
-    platform.Anchored = true
-    platform.CanCollide = false
-    platform.Transparency = 0.5
-    platform.Parent = workspace
+-- Function to create and maintain platform below character 
+local function createPlatform(Character) 
+    local platform = Instance.new("Part") 
+    platform.Size = Vector3.new(5, 1, 5) 
+    platform.Anchored = true 
+    platform.CanCollide = false 
+    platform.Transparency = 0.5 
+    platform.Parent = workspace 
 
-    local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
+    local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart") 
 
-    -- Update platform position every frame
-    local connection
-    connection = RunService.Heartbeat:Connect(function()
-        if not Character or not Character.Parent then
-            platform:Destroy()
-            connection:Disconnect()
-        else
-            platform.Position = HumanoidRootPart.Position - Vector3.new(0, HumanoidRootPart.Size.Y / 2 + PlatformOffset, 0)
-        end
-    end)
+    -- Update platform position every frame 
+    local connection 
+    connection = RunService.Heartbeat:Connect(function() 
+        if not Character or not Character.Parent then 
+            platform:Destroy() 
+            connection:Disconnect() 
+        else 
+            platform.Position = HumanoidRootPart.Position - Vector3.new(0, HumanoidRootPart.Size.Y / 2 + PlatformOffset, 0) 
+        end 
+    end) 
 
-    return platform
-end
+    return platform 
+end 
 
--- Function to tween and rotate to the mob
-local function tp(mob, HumanoidRootPart)
-    if not mob or not HumanoidRootPart then return end
+-- Function to tween and rotate to the mob 
+local function tp(mob, HumanoidRootPart) 
+    if not mob or not HumanoidRootPart then return end 
 
-    local targetPart = getTargetPart(mob)
-    if not targetPart then return end
+    local targetPart = getTargetPart(mob) 
+    if not targetPart then return end 
 
-    local targetPosition = targetPart.Position
-    local lookAtPosition = CFrame.lookAt(HumanoidRootPart.Position, targetPosition) -- Makes the player face the mob
-    local pos = CFrame.new(targetPosition)
+    local targetPosition = targetPart.Position 
+    local lookAtPosition = CFrame.lookAt(HumanoidRootPart.Position, targetPosition) -- Makes the player face the mob 
+    local pos = CFrame.new(targetPosition) 
 
-    local val = Instance.new("CFrameValue")
-    val.Value = HumanoidRootPart.CFrame
+    local val = Instance.new("CFrameValue") 
+    val.Value = HumanoidRootPart.CFrame 
 
-    local distance = (HumanoidRootPart.Position - targetPosition).magnitude
-    local minDuration = 1.0  
-    local tweenDuration = math.max(distance / TeleportSpeed, minDuration)
+    local distance = (HumanoidRootPart.Position - targetPosition).magnitude 
+    local minDuration = 1.0   
+    local tweenDuration = math.max(distance / TeleportSpeed, minDuration) 
 
-    local tween = TweenService:Create(
-        val,
-        TweenInfo.new(tweenDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 0),
-        { Value = pos }
-    )
+    local tween = TweenService:Create( 
+        val, 
+        TweenInfo.new(tweenDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 0), 
+        { Value = pos } 
+    ) 
 
-    tween:Play()
+    tween:Play() 
 
-    local completed = false
-    tween.Completed:Connect(function()
-        completed = true
-    end)
+    local completed = false 
+    tween.Completed:Connect(function() 
+        completed = true 
+    end) 
 
-    while not completed and mob and mob.Parent == workspace:FindFirstChild("Alive") do
-        HumanoidRootPart.CFrame = CFrame.new(val.Value.Position) * CFrame.Angles(0, lookAtPosition.Y - HumanoidRootPart.CFrame.Y, 0) -- Rotate smoothly
-        RunService.Heartbeat:Wait()
-    end
+    while not completed and mob and mob.Parent == workspace:FindFirstChild("Alive") do 
+        HumanoidRootPart.CFrame = CFrame.new(val.Value.Position) * CFrame.Angles(0, lookAtPosition.Y - HumanoidRootPart.CFrame.Y, 0) -- Rotate smoothly 
+        RunService.Heartbeat:Wait() 
+    end 
 
-    val:Destroy()
+    val:Destroy() 
 
-    -- Positioning the character behind the mob
-    local behindPosition = targetPart.Position + targetPart.CFrame.LookVector * -DistanceBehind -- Move behind the mob at the specified distance
-    HumanoidRootPart.CFrame = CFrame.new(behindPosition, targetPart.Position) -- Ensures character faces the mob
-end
+    -- Positioning the character behind the mob 
+    local behindPosition = targetPart.Position + targetPart.CFrame.LookVector * -DistanceBehind -- Move behind the mob at the specified distance 
+    HumanoidRootPart.CFrame = CFrame.new(behindPosition, targetPart.Position) -- Ensures character faces the mob 
+end 
 
--- Combat Function - Attack
-local function attack()
-    if AutoClickEnabled then
-        if not MouseDown then
-            VirtualUser:Button1Down(UserInputService:GetMouseLocation())
-            MouseDown = true
-        end
-    else
-        if MouseDown then
-            VirtualUser:Button1Up(UserInputService:GetMouseLocation())
-            MouseDown = false
-        end
-    end
-end
+-- Combat Function - Attack 
+local function attack() 
+    if AutoClickEnabled then 
+        if not MouseDown then 
+            VirtualUser:Button1Down(UserInputService:GetMouseLocation()) 
+            MouseDown = true 
+        end 
+    else 
+        if MouseDown then 
+            VirtualUser:Button1Up(UserInputService:GetMouseLocation()) 
+            MouseDown = false 
+        end 
+    end 
+end 
 
--- Main Loop
-local function mainLoop()
-    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-    if not Character then return end
-    local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-    if not HumanoidRootPart then return end
-    local Humanoid = Character:WaitForChild("Humanoid")
-    if not Humanoid then return end
-    local AliveFolder = workspace:FindFirstChild("Alive")
-    if not AliveFolder then return end
+-- Main Loop 
+local function mainLoop() 
+    local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait() 
+    if not Character then return end 
+    local HumanoidRootPart = Character:WaitForChild("HumanoidRootPart") 
+    if not HumanoidRootPart then return end 
+    local Humanoid = Character:WaitForChild("Humanoid") 
+    if not Humanoid then return end 
+    local AliveFolder = workspace:FindFirstChild("Alive") 
+    if not AliveFolder then return end 
 
-    local deathConnection
-    local platform = createPlatform(Character) -- Create platform below player
+    local deathConnection 
+    local platform = createPlatform(Character) -- Create platform below player 
 
-    local function onDeath()
-        if deathConnection then
-            deathConnection:Disconnect()
-            deathConnection = nil
-        end
-        if platform then
-            platform:Destroy()
-            platform = nil
-        end
-        LocalPlayer:LoadCharacter()
-        Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        HumanoidRootPart = Character:WaitForChild("HumanoidRootPart")
-        Humanoid = Character:WaitForChild("Humanoid")
-        deathConnection = Humanoid.Died:Connect(onDeath)
+    local function onDeath() 
+        if deathConnection then 
+            deathConnection:Disconnect() 
+            deathConnection = nil 
+        end 
+        if platform then 
+            platform:Destroy() 
+            platform = nil 
+        end 
+        LocalPlayer:LoadCharacter() 
+        Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait() 
+        HumanoidRootPart = Character:WaitForChild("HumanoidRootPart") 
+        Humanoid = Character:WaitForChild("Humanoid") 
+        deathConnection = Humanoid.Died:Connect(onDeath) 
 
-        platform = createPlatform(Character) -- Recreate platform after respawn
-    end
+        platform = createPlatform(Character) -- Recreate platform after respawn 
+    end 
 
-    deathConnection = Humanoid.Died:Connect(onDeath)
+    deathConnection = Humanoid.Died:Connect(onDeath) 
 
-    local function runLoop(targetMob)
-        if not targetMob then
-            wait(3) -- Wait 5 seconds before looking for a new target
-            local newTarget = findTargetMob(workspace:FindFirstChild("Alive"), nil) -- Search for a new mob if none exists
-            if newTarget then
-                runLoop(newTarget)
-            else
-                wait(1) -- Wait before trying again
-                runLoop(nil) -- Continue searching for a new target
-            end
-            return
-        end
+    local function runLoop(targetMob) 
+        if not targetMob then 
+            wait(3) -- Wait 5 seconds before looking for a new target 
+            local newTarget = findTargetMob(workspace:FindFirstChild("Alive"), nil) -- Search for a new mob if none exists 
+            if newTarget then 
+                runLoop(newTarget) 
+            else 
+                wait(1) -- Wait before trying again 
+                runLoop(nil) -- Continue searching for a new target 
+            end 
+            return 
+        end 
 
-        if not HumanoidRootPart then return end
+        if not HumanoidRootPart then return end 
 
-        -- Tween to the mob
-        tp(targetMob, HumanoidRootPart)
+        -- Tween to the mob 
+        tp(targetMob, HumanoidRootPart) 
 
-        local targetMobName = targetMob.Name
-        local currentMob = targetMob
+        local targetMobName = targetMob.Name 
+        local currentMob = targetMob 
 
-        -- Keep attacking the current mob until it's removed from the Alive folder
-        while currentMob and currentMob.Name == targetMobName do
-            if not currentMob or not HumanoidRootPart then break end
-            local targetPart = getTargetPart(currentMob)
-            if targetPart then
-                local behindPosition = targetPart.Position + targetPart.CFrame.LookVector * -DistanceBehind -- Move behind the mob at the specified distance
-                HumanoidRootPart.CFrame = CFrame.new(behindPosition, targetPart.Position) -- Ensures character faces mob
-                attack()
+        -- Keep attacking the current mob until it's removed from the Alive folder 
+        while currentMob and currentMob.Name == targetMobName do 
+            if not currentMob or not HumanoidRootPart then break end 
+            local targetPart = getTargetPart(currentMob) 
+            if targetPart then 
+                local behindPosition = targetPart.Position + targetPart.CFrame.LookVector * -DistanceBehind -- Move behind the mob at the specified distance 
+                HumanoidRootPart.CFrame = CFrame.new(behindPosition, targetPart.Position) -- Ensures character faces mob 
+                attack() 
 
-                -- Wait until mob is no longer in the Alive folder
-                if not workspace:FindFirstChild("Alive"):FindFirstChild(targetMobName) then
-                    break
-                end
-            end
-            RunService.Heartbeat:Wait()
-            currentMob = workspace:FindFirstChild("Alive"):FindFirstChild(targetMobName)
-        end
+                -- Wait until mob is no longer in the Alive folder 
+                if not workspace:FindFirstChild("Alive"):FindFirstChild(targetMobName) then 
+                    break 
+                end 
+            end 
+            RunService.Heartbeat:Wait() 
+            currentMob = workspace:FindFirstChild("Alive"):FindFirstChild(targetMobName) 
+        end 
 
-        -- After the mob is removed, continue searching for the next mob
-        local newTarget = findTargetMob(workspace:FindFirstChild("Alive"), targetMob)
-        if newTarget then
-            runLoop(newTarget)
-        else
-            wait(1) -- Wait for a while before searching for a new target
-            runLoop(nil) -- Keep looking for new mobs
-        end
-    end
+        -- After the mob is removed, continue searching for the next mob 
+        local newTarget = findTargetMob(workspace:FindFirstChild("Alive"), targetMob) 
+        if newTarget then 
+            runLoop(newTarget) 
+        else 
+            wait(1) -- Wait for a while before searching for a new target 
+            runLoop(nil) -- Keep looking for new mobs 
+        end 
+    end 
 
-    local initialMob = findTargetMob(AliveFolder)
-    if initialMob then
-        runLoop(initialMob)
-    else
-        wait(1) -- Wait before starting the search loop if no mob is found
-        runLoop(nil)
-    end
-end
+    local initialMob = findTargetMob(AliveFolder) 
+    if initialMob then 
+        runLoop(initialMob) 
+    else 
+        wait(1) -- Wait before starting the search loop if no mob is found 
+        runLoop(nil) 
+    end 
+end 
 
-if LocalPlayer.Character then
-    mainLoop()
-else
-    LocalPlayer.CharacterAdded:Connect(mainLoop)
+if LocalPlayer.Character then 
+    mainLoop() 
+else 
+    LocalPlayer.CharacterAdded:Connect(mainLoop) 
 end
