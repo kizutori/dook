@@ -6,7 +6,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local RunService = game:GetService("RunService")
 
 -- Customizable Variables
-local TargetMobNames = {"Lycanthar"}  -- List of mob names to target
+local TargetMobNames = {"Drogar"}  -- List of mob names to target
 local DistanceBehind = 7  -- Distance behind the mob
 local TeleportSpeed = 200
 local PlatformOffset = 1 -- Distance of platform below player
